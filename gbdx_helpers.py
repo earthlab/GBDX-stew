@@ -9,9 +9,36 @@ from shapely.wkt import loads
 import pandas as pd
 from shapely.geometry import box
 from fiona.crs import from_epsg
+import shutil
+import requests
+import rasterio as rio
 
 ## Provide a sample query for import
 sample_query = 'item_type:WV03_VNIR OR item_type:WV02 OR item_type:WV04 OR item_type:ESAProduct'
+
+gbdx = Interface()
+
+def get_preview_image_arr(catid):
+    '''
+    gbdx: interface object for GBDX access
+    catid: catolog ID for image asset
+    
+    returns: numpy array for preview image
+    '''
+
+    my_url = gbdx.catalog.get(catid)['properties']['browseURL']
+    response = requests.get(my_url, stream=True)
+    temp = 'temp.png'
+    with open(temp, 'wb') as file:
+        shutil.copyfileobj(response.raw, file)
+    del response
+    
+    with rio.open(temp) as src:
+        arr = src.read()
+        
+    os.remove(temp)
+    
+    return arr
 
 def flatten_dict(d):
     def expand(key, value):
